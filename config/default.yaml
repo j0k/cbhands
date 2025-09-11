@@ -1,0 +1,37 @@
+# Battle Hands Services Configuration
+# Default configuration for all Battle Hands services
+
+services:
+  dealer:
+    name: "dealer"
+    port: 6000
+    command: "cd /home/jk/btl_dev_fullai/dealer && ./bin/dealer"
+    working_directory: "/home/jk/btl_dev_fullai/dealer"
+    health_endpoint: "/v1/dealer/health"
+    description: "Battle Hands Dealer Service (Go)"
+    environment: {}
+    
+  lobby_py:
+    name: "lobby_py"
+    port: 6001
+    command: "cd /home/jk/btl_dev_fullai/lobby_py && source venv/bin/activate && python3 main.py --debug"
+    working_directory: "/home/jk/btl_dev_fullai/lobby_py"
+    health_endpoint: "/api/v1/health"
+    description: "Battle Hands Lobby Service (Python)"
+    environment: {}
+    
+  battle_hands_ts:
+    name: "battle_hands_ts"
+    port: 8080
+    command: "cd /home/jk/btl_dev_fullai/battle_hands_ts && npm run dev"
+    working_directory: "/home/jk/btl_dev_fullai/battle_hands_ts"
+    health_endpoint: "/"
+    description: "Battle Hands Frontend (TypeScript)"
+    environment: {}
+
+# Global settings
+settings:
+  state_file: "/tmp/cbhands_state.yaml"
+  log_dir: "/tmp/cbhands_logs"
+  pid_dir: "/tmp/cbhands_pids"
+  timeout: 30  # seconds
