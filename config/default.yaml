@@ -14,7 +14,7 @@ services:
   lobby_py:
     name: "lobby_py"
     port: 6001
-    command: "cd /home/jk/btl_dev_fullai/lobby_py && source venv/bin/activate && python3 main.py --debug"
+    command: "cd /home/jk/btl_dev_fullai/lobby_py && bash -c 'source venv/bin/activate && python3 main.py --debug'"
     working_directory: "/home/jk/btl_dev_fullai/lobby_py"
     health_endpoint: "/api/v1/health"
     description: "Battle Hands Lobby Service (Python)"
