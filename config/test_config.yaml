@@ -1,0 +1,55 @@
+# Battle Hands Test Configuration
+# Configuration for MVP_PrePlay testing
+
+services:
+  dealer:
+    name: "dealer"
+    port: 8080
+    command: "cd /home/jk/battles/dealer && go run cmd/dealer/main.go"
+    working_directory: "/home/jk/battles/dealer"
+    health_endpoint: "/v1/dealer/health"
+    description: "Battle Hands Dealer Service (Go) - Test"
+    environment: {}
+    
+  lobby:
+    name: "lobby"
+    port: 12120
+    command: "cd /home/jk/battles/lobby && go run cmd/lobby/main.go"
+    working_directory: "/home/jk/battles/lobby"
+    health_endpoint: "/api/v1/health"
+    description: "Battle Hands Lobby Service (Go) - Test"
+    environment: {}
+    
+  battle_hands_ts:
+    name: "battle_hands_ts"
+    port: 3000
+    command: "cd /home/jk/battles/battle_hands_ts && npm run dev"
+    working_directory: "/home/jk/battles/battle_hands_ts"
+    health_endpoint: "/"
+    description: "Battle Hands Frontend (TypeScript) - Test"
+    environment: {}
+    
+  cbhands_monitor_ts:
+    name: "cbhands_monitor_ts"
+    port: 9000
+    command: "cd /home/jk/battles/cbhands_monitor_ts && npm run dev"
+    working_directory: "/home/jk/battles/cbhands_monitor_ts"
+    health_endpoint: "/"
+    description: "Battle Hands Monitor (TypeScript) - Test"
+    environment: {}
+
+# Global settings
+settings:
+  state_file: "/tmp/cbhands_test_state.yaml"
+  log_dir: "/tmp/cbhands_test_logs"
+  pid_dir: "/tmp/cbhands_test_pids"
+  timeout: 30  # seconds
+
+# Test configuration
+test:
+  games:
+    - name: "5-3-test"
+      description: "5 players, 3 rounds test game"
+      players: 5
+      rounds: 3
+      test_data: true

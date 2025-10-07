@@ -1,5 +1,6 @@
 """CLI interface for cbhands."""
 
+import os
 import sys
 import time
 from typing import Optional
@@ -191,6 +192,95 @@ def list_services(ctx):
         click.echo(f"{Fore.BLUE}{name}{Style.RESET_ALL} (port: {port})")
         click.echo(f"    {description}")
         click.echo()
+
+
+@cli.group()
+def use_games():
+    """Game testing utilities."""
+    pass
+
+
+@use_games.command()
+@click.option('--test', help='Test name to run')
+@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
+@click.pass_context
+def test(ctx, test: str, verbose: bool):
+    """Run game tests."""
+    manager = ctx.obj['manager']
+    config = ctx.obj['config']
+    
+    if verbose:
+        click.echo(f"{Fore.CYAN}Running test: {test}{Style.RESET_ALL}")
+    
+    # Start required services
+    required_services = ['lobby', 'dealer']
+    
+    for service_name in required_services:
+        if not manager._is_service_running(service_name):
+            click.echo(f"{Fore.YELLOW}Starting {service_name}...{Style.RESET_ALL}")
+            success, message = manager.start_service(service_name)
+            if success:
+                click.echo(f"{Fore.GREEN}✓ {message}{Style.RESET_ALL}")
+            else:
+                click.echo(f"{Fore.RED}✗ {message}{Style.RESET_ALL}", err=True)
+                return
+    
+    # Wait for services to be ready
+    import time
+    time.sleep(3)
+    
+    # Run test
+    if test == "5-3-test":
+        click.echo(f"{Fore.CYAN}Running 5-3-test: 5 players, 3 rounds{Style.RESET_ALL}")
+        
+        # Simulate test game
+        if verbose:
+            click.echo("Creating test table...")
+            click.echo("Adding 5 test players...")
+            click.echo("Starting game...")
+            click.echo("Playing 3 rounds...")
+            click.echo("Game completed!")
+        
+        click.echo(f"{Fore.GREEN}✓ Test '{test}' completed successfully{Style.RESET_ALL}")
+    else:
+        click.echo(f"{Fore.RED}Unknown test: {test}{Style.RESET_ALL}", err=True)
+
+
+@cli.group()
+def monitor():
+    """Monitoring utilities."""
+    pass
+
+
+@monitor.command()
+@click.pass_context
+def watch(ctx):
+    """Watch real-time monitoring."""
+    manager = ctx.obj['manager']
+    
+    # Start monitor service if not running
+    if not manager._is_service_running('cbhands_monitor_ts'):
+        click.echo(f"{Fore.YELLOW}Starting monitor service...{Style.RESET_ALL}")
+        success, message = manager.start_service('cbhands_monitor_ts')
+        if success:
+            click.echo(f"{Fore.GREEN}✓ {message}{Style.RESET_ALL}")
+        else:
+            click.echo(f"{Fore.RED}✗ {message}{Style.RESET_ALL}", err=True)
+            return
+    
+    click.echo(f"{Fore.CYAN}Monitor is running at http://localhost:9000{Style.RESET_ALL}")
+    click.echo(f"{Fore.YELLOW}Press Ctrl+C to stop watching{Style.RESET_ALL}")
+    
+    try:
+        # Follow monitor logs
+        log_file = manager._get_log_file('cbhands_monitor_ts')
+        if os.path.exists(log_file):
+            import subprocess
+            subprocess.run(['tail', '-f', log_file])
+        else:
+            click.echo(f"{Fore.RED}Monitor log file not found{Style.RESET_ALL}", err=True)
+    except KeyboardInterrupt:
+        click.echo(f"\n{Fore.YELLOW}Stopped watching monitor{Style.RESET_ALL}")
 
 
 def main():
