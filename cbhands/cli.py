@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from typing import Optional
+import importlib
 
 import click
 from colorama import init, Fore, Style
@@ -194,6 +195,24 @@ def list_services(ctx):
         click.echo()
 
 
+@cli.command()
+def plugins():
+    """List all available plugins."""
+    plugin_info = get_plugin_info()
+    
+    click.echo(f"{Fore.CYAN}Available Plugins:{Style.RESET_ALL}")
+    click.echo("=" * 30)
+    
+    if not plugin_info:
+        click.echo(f"{Fore.YELLOW}No plugins found{Style.RESET_ALL}")
+        return
+    
+    for plugin in plugin_info:
+        click.echo(f"{Fore.BLUE}{plugin['name']}{Style.RESET_ALL} v{plugin['version']}")
+        click.echo(f"    {plugin['description']}")
+        click.echo()
+
+
 @cli.group()
 def use_games():
     """Game testing utilities."""
@@ -283,8 +302,132 @@ def watch(ctx):
         click.echo(f"\n{Fore.YELLOW}Stopped watching monitor{Style.RESET_ALL}")
 
 
+def load_plugins():
+    """Load available plugins."""
+    plugins = {}
+    
+    try:
+        # Try to load dev_showroom plugin
+        from cbhands_dev_showroom.plugin import DevShowroomPlugin
+        dev_showroom = DevShowroomPlugin()
+        plugins[dev_showroom.name] = dev_showroom
+    except ImportError:
+        pass
+    
+    return plugins
+
+
+def get_plugin_info():
+    """Get plugin information including versions."""
+    plugin_info = []
+    
+    try:
+        # Get dev_showroom plugin info
+        import cbhands_dev_showroom
+        plugin_info.append({
+            'name': 'dev_showroom',
+            'version': getattr(cbhands_dev_showroom, '__version__', '0.1.0'),
+            'description': 'Development Showroom - Interactive testing and demonstration tool'
+        })
+    except ImportError:
+        pass
+    
+    try:
+        # Get use_games plugin info
+        import cbhands_use_games
+        plugin_info.append({
+            'name': 'use_games',
+            'version': getattr(cbhands_use_games, '__version__', '0.1.0'),
+            'description': 'Game Testing - Testing utilities for Battle Hands'
+        })
+    except ImportError:
+        pass
+    
+    return plugin_info
+
+
 def main():
     """Main entry point."""
+    # Load plugins
+    plugins = load_plugins()
+    
+    # Add plugin commands to CLI
+    for plugin_name, plugin in plugins.items():
+        commands = plugin.get_commands()
+        
+        # Create a plugin group with hyphenated name
+        plugin_group_name = plugin_name.replace('_', '-')
+        
+        @click.group(name=plugin_group_name)
+        def plugin_group():
+            """Plugin commands."""
+            pass
+        
+        # Create commands for each plugin function
+        if 'create-tables' in commands:
+            @click.command(name='create-tables')
+            @click.option('--count', default=10, help='Number of tables to create')
+            @click.option('--mode', default='fun', help='Game mode')
+            @click.pass_context
+            def create_tables_command(ctx, count, mode, **kwargs):
+                commands['create-tables'](count=count, mode=mode, verbose=ctx.obj.get('verbose', False))
+            plugin_group.add_command(create_tables_command)
+        
+        if 'list-tables' in commands:
+            @click.command(name='list-tables')
+            @click.pass_context
+            def list_tables_command(ctx, **kwargs):
+                commands['list-tables'](verbose=ctx.obj.get('verbose', False))
+            plugin_group.add_command(list_tables_command)
+        
+        if 'show-table' in commands:
+            @click.command(name='show-table')
+            @click.option('--name', required=True, help='Table name')
+            @click.pass_context
+            def show_table_command(ctx, name, **kwargs):
+                commands['show-table'](name=name, verbose=ctx.obj.get('verbose', False))
+            plugin_group.add_command(show_table_command)
+        
+        if 'delete-tables' in commands:
+            @click.command(name='delete-tables')
+            @click.option('--all', is_flag=True, help='All tables')
+            @click.option('--name', help='Table name')
+            @click.pass_context
+            def delete_tables_command(ctx, all, name, **kwargs):
+                commands['delete-tables'](all_tables=all, name=name, verbose=ctx.obj.get('verbose', False))
+            plugin_group.add_command(delete_tables_command)
+        
+        if 'show-redis' in commands:
+            @click.command(name='show-redis')
+            @click.option('--keys', help='Redis key pattern')
+            @click.pass_context
+            def show_redis_command(ctx, keys, **kwargs):
+                commands['show-redis'](keys=keys, verbose=ctx.obj.get('verbose', False))
+            plugin_group.add_command(show_redis_command)
+        
+        if 'interactive' in commands:
+            @click.command(name='interactive')
+            @click.pass_context
+            def interactive_command(ctx, **kwargs):
+                commands['interactive'](verbose=ctx.obj.get('verbose', False))
+            plugin_group.add_command(interactive_command)
+        
+        # Add the plugin group to the main CLI
+        cli.add_command(plugin_group)
+    
+    # Add plugin information to help
+    plugin_info = get_plugin_info()
+    if plugin_info:
+        # Create enhanced help text
+        plugin_text = f"\n{Fore.CYAN}Available Plugins:{Style.RESET_ALL}\n"
+        plugin_text += "=" * 30 + "\n"
+        for plugin in plugin_info:
+            plugin_text += f"{Fore.BLUE}{plugin['name']}{Style.RESET_ALL} v{plugin['version']} - {plugin['description']}\n"
+        plugin_text += "\n"
+        
+        # Append plugin information to help
+        cli.help = cli.help + plugin_text
+    
     cli()
 
 

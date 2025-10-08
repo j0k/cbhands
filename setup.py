@@ -11,7 +11,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 
 setup(
     name="cbhands",
-    version="0.1.0",
+    version="0.2.0",
     author="Battle Hands Team",
     description="Battle Hands Service Manager - утилита для управления сервисами игры Battle Hands",
     long_description=long_description,
