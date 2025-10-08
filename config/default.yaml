@@ -1,37 +1,50 @@
-# Battle Hands Services Configuration
-# Default configuration for all Battle Hands services
+settings:
+  state_file: /tmp/cbhands_state.yaml
+  log_dir: /tmp/cbhands_logs
+  pid_dir: /tmp/cbhands_pids
+  timeout: 30
 
 services:
+  lobby:
+    name: "lobby"
+    command: "go run cmd/lobby/main.go"
+    working_directory: "/home/jk/battles/lobby"
+    port: 6001
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+    description: "Lobby Service - Table management and WebSocket connections"
+    
   dealer:
     name: "dealer"
+    command: "go run cmd/dealer/main.go"
+    working_directory: "/home/jk/battles/dealer"
     port: 6000
-    command: "cd /home/jk/btl_dev_fullai/dealer && ./bin/dealer"
-    working_directory: "/home/jk/btl_dev_fullai/dealer"
-    health_endpoint: "/v1/dealer/health"
-    description: "Battle Hands Dealer Service (Go)"
-    environment: {}
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+    description: "Dealer Service - Game logic and rules"
     
-  lobby_py:
-    name: "lobby_py"
-    port: 6001
-    command: "cd /home/jk/btl_dev_fullai/lobby_py && source venv/bin/activate && python3 main.py --debug"
-    working_directory: "/home/jk/btl_dev_fullai/lobby_py"
-    health_endpoint: "/api/v1/health"
-    description: "Battle Hands Lobby Service (Python)"
-    environment: {}
+  monitor:
+    name: "monitor"
+    command: "node dist/index.js"
+    working_directory: "/home/jk/battles/cbhands_monitor_ts"
+    port: 9000
+    env:
+      NODE_ENV: production
+      SSL_ENABLED: true
+      MONITOR_PORT: 9000
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      LOBBY_HTTP_PORT: 6001
+      DEALER_HTTP_PORT: 6000
+    description: "Monitor Service - Web control panel and monitoring"
     
-  battle_hands_ts:
-    name: "battle_hands_ts"
-    port: 8080
-    command: "cd /home/jk/btl_dev_fullai/battle_hands_ts && npm run dev"
-    working_directory: "/home/jk/btl_dev_fullai/battle_hands_ts"
-    health_endpoint: "/"
-    description: "Battle Hands Frontend (TypeScript)"
-    environment: {}
-
-# Global settings
-settings:
-  state_file: "/tmp/cbhands_state.yaml"
-  log_dir: "/tmp/cbhands_logs"
-  pid_dir: "/tmp/cbhands_pids"
-  timeout: 30  # seconds
+  frontend:
+    name: "frontend"
+    command: "npx serve dist -p 3000"
+    working_directory: "/home/jk/battles/battle_hands_ts"
+    port: 3000
+    env:
+      NODE_ENV: production
+    description: "Frontend - Battle Hands TypeScript application"

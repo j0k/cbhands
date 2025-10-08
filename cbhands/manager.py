@@ -79,7 +79,11 @@ class ServiceManager:
                 service_config = self.config.get_service(service_name)
                 if service_config:
                     cmd = ' '.join(process.cmdline())
-                    if service_config['name'] in cmd:
+                    # Check if the command matches the expected command or contains the service name
+                    expected_cmd = service_config.get('command', '')
+                    if (service_config['name'] in cmd or 
+                        expected_cmd in cmd or 
+                        cmd.endswith(expected_cmd.split()[-1])):
                         return True
             return False
         except (ValueError, psutil.NoSuchProcess, psutil.AccessDenied):

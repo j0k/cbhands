@@ -61,7 +61,7 @@ cbhands stop <service_name>
 # Перезапуск сервиса
 cbhands restart <service_name>
 
-# Статус сервисов
+# Статус сервисов (с отображением портов)
 cbhands status [service_name]
 
 # Список доступных сервисов
@@ -75,6 +75,29 @@ cbhands logs <service_name> [--lines N] [--follow]
 
 # Мониторинг в реальном времени
 cbhands monitor watch
+```
+
+### Статус сервисов
+Команда `cbhands status` отображает подробную информацию о всех сервисах:
+- **Порт**: Порт сервиса (отображается для всех сервисов)
+- **PID**: Идентификатор процесса (для запущенных сервисов)
+- **Uptime**: Время работы (для запущенных сервисов)
+- **Статус**: Состояние сервиса (running/stopped)
+
+**Пример вывода:**
+```
+Battle Hands Services Status
+==================================================
+● lobby
+    Lobby Service - Table management and WebSocket connections
+    Port: 6001
+    PID: 596273
+    Uptime: 00:29:37
+
+○ frontend
+    Frontend - Battle Hands TypeScript application
+    Port: 3000
+    Status: stopped
 ```
 
 ### Плагины

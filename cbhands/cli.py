@@ -129,10 +129,12 @@ def _print_service_status(status_info: dict):
     if description:
         click.echo(f"    {description}")
     
+    # Always show port if available
+    if port:
+        click.echo(f"    Port: {port}")
+    
     if status == 'running' and pid:
         click.echo(f"    PID: {pid}")
-        if port:
-            click.echo(f"    Port: {port}")
         
         # Show uptime if available
         uptime = status_info.get('uptime')
