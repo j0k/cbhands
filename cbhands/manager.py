@@ -225,7 +225,7 @@ class ServiceManager:
                 cwd=service_config['working_directory'],
                 stdout=open(self._get_log_file(service_name), 'a'),
                 stderr=subprocess.STDOUT,
-                env={**os.environ, **service_config.get('environment', {})},
+                env={**os.environ, **{k: str(v) for k, v in service_config.get('env', {}).items()}},
                 preexec_fn=os.setsid if '&&' in service_config['command'] or '|' in service_config['command'] else None
             )
             

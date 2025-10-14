@@ -27,7 +27,7 @@ services:
     
   monitor:
     name: "monitor"
-    command: "node dist/index.js"
+    command: "node dist/index.js --port 9001"
     working_directory: "/home/jk/battles/cbhands_monitor_ts"
     port: 9001
     env:
