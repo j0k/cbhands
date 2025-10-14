@@ -373,3 +373,51 @@ class ServiceManager:
                 return ''.join(all_lines[-lines:])
         except Exception as e:
             return f"Error reading logs for service '{service_name}': {e}"
+    
+    def stop_all_services(self) -> Tuple[bool, str]:
+        """Stop all Battle Hands services.
+        
+        Returns:
+            Tuple of (success, message)
+        """
+        services = self.config.get_services()
+        stopped_services = []
+        failed_services = []
+        
+        for service_name in services.keys():
+            success, message = self.stop_service(service_name)
+            if success:
+                stopped_services.append(service_name)
+            else:
+                failed_services.append(service_name)
+        
+        if not failed_services:
+            return True, f"All services stopped successfully: {', '.join(stopped_services)}"
+        elif stopped_services:
+            return False, f"Partially stopped: {', '.join(stopped_services)}. Failed: {', '.join(failed_services)}"
+        else:
+            return False, f"Failed to stop all services: {', '.join(failed_services)}"
+    
+    def start_all_services(self) -> Tuple[bool, str]:
+        """Start all Battle Hands services.
+        
+        Returns:
+            Tuple of (success, message)
+        """
+        services = self.config.get_services()
+        started_services = []
+        failed_services = []
+        
+        for service_name in services.keys():
+            success, message = self.start_service(service_name)
+            if success:
+                started_services.append(service_name)
+            else:
+                failed_services.append(service_name)
+        
+        if not failed_services:
+            return True, f"All services started successfully: {', '.join(started_services)}"
+        elif started_services:
+            return False, f"Partially started: {', '.join(started_services)}. Failed: {', '.join(failed_services)}"
+        else:
+            return False, f"Failed to start all services: {', '.join(failed_services)}"

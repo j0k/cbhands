@@ -82,6 +82,34 @@ def restart(ctx, service_name: str):
 
 
 @cli.command()
+@click.pass_context
+def start_all(ctx):
+    """Start all Battle Hands services."""
+    manager = ctx.obj['manager']
+    success, message = manager.start_all_services()
+    
+    if success:
+        click.echo(f"{Fore.GREEN}✓ {message}{Style.RESET_ALL}")
+    else:
+        click.echo(f"{Fore.YELLOW}⚠ {message}{Style.RESET_ALL}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+@click.pass_context
+def stop_all(ctx):
+    """Stop all Battle Hands services."""
+    manager = ctx.obj['manager']
+    success, message = manager.stop_all_services()
+    
+    if success:
+        click.echo(f"{Fore.GREEN}✓ {message}{Style.RESET_ALL}")
+    else:
+        click.echo(f"{Fore.YELLOW}⚠ {message}{Style.RESET_ALL}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
 @click.argument('service_name', required=False)
 @click.pass_context
 def status(ctx, service_name: Optional[str]):
