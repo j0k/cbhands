@@ -166,6 +166,28 @@ class DevShowroomV3Plugin(BasePlugin):
                     )
                 ],
                 group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A1",
+                description="Run 1vs1.A1 scenario (Rock vs Scissors)",
+                handler=self._simulate_a1,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
             )
         ]
     

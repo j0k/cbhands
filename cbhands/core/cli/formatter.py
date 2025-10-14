@@ -150,32 +150,8 @@ class RichFormatter(OutputFormatter):
     def format_data(self, data: Any) -> str:
         """Format data output."""
         if self._rich_available:
-            if isinstance(data, dict):
-                # Create a table for dict data
-                table = self.Table(show_header=True, header_style="bold magenta")
-                table.add_column("Key", style="cyan")
-                table.add_column("Value", style="white")
-                
-                for key, value in data.items():
-                    table.add_row(str(key), str(value))
-                
-                return str(table)
-            elif isinstance(data, list) and data and isinstance(data[0], dict):
-                # Create a table for list of dicts
-                if not data:
-                    return "[]"
-                
-                table = self.Table(show_header=True, header_style="bold magenta")
-                headers = list(data[0].keys())
-                for header in headers:
-                    table.add_column(header, style="cyan")
-                
-                for row in data:
-                    table.add_row(*[str(row.get(header, "")) for header in headers])
-                
-                return str(table)
-            else:
-                return json.dumps(data, indent=2, default=str)
+            # Use JSON formatting instead of Rich tables for better compatibility
+            return json.dumps(data, indent=2, default=str, ensure_ascii=False)
         return self._fallback.format_data(data)
     
     def format_table(self, headers: List[str], rows: List[List[str]]) -> str:

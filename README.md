@@ -1,14 +1,15 @@
-# cbhands - Battle Hands Service Manager
+# Control Battle Hands - Service Manager
 
-**Version:** 0.2.0 (v3.0.0 в разработке)  
+**Version:** 3.0.0 (2025-01-14)  
 **Author:** Battle Hands Team  
 **Description:** Утилита для управления сервисами игры Battle Hands с поддержкой плагинов
 
-## 🆕 cbhands v3.0.0 - Новая архитектура
+## 🆕 Control Battle Hands v3.0.0 - Новая архитектура
 
 **Статус:** ✅ Реализована и протестирована  
 **Ветка:** `refactor/v3.0.0`  
-**Тег:** `v3.0.0`
+**Тег:** `v3.0.0`  
+**Дата релиза:** 2025-01-14
 
 ### Ключевые улучшения v3.0.0:
 
@@ -37,6 +38,105 @@ python -m cbhands.v3.main dev-showroom simulate-a1
 
 # Список плагинов
 python -m cbhands.v3.main plugins
+```
+
+## 📚 **Документация для разработчиков**
+
+### Создание нового плагина
+
+Control Battle Hands использует простую и понятную систему плагинов. Вот как создать свой плагин:
+
+#### 1. **Структура плагина**
+
+```python
+# plugins/my_plugin.py
+from cbhands.core import BasePlugin, CommandDefinition, OptionDefinition, OptionType, PluginMetadata
+from cbhands.core.cli.formatter import RichFormatter
+from cbhands.core.config import PluginConfig
+
+class MyPlugin(BasePlugin):
+    """Мой первый плагин для Control Battle Hands."""
+    
+    def __init__(self, config: PluginConfig, formatter: RichFormatter, event_bus=None):
+        super().__init__(config, formatter, event_bus)
+        # Инициализация вашего плагина
+    
+    def get_metadata(self) -> PluginMetadata:
+        """Метаданные плагина."""
+        return PluginMetadata(
+            name="my_plugin",
+            version="1.0.0",
+            description="Описание моего плагина",
+            author="Ваше имя",
+            dependencies=["redis"]  # Зависимости
+        )
+    
+    def get_commands(self) -> List[CommandDefinition]:
+        """Команды плагина."""
+        return [
+            CommandDefinition(
+                name="hello",
+                group="my-plugin",
+                description="Поздороваться",
+                handler=self._hello_command,
+                options=[
+                    OptionDefinition(
+                        name="name", 
+                        type=OptionType.STRING, 
+                        default="World", 
+                        help="Имя для приветствия"
+                    )
+                ]
+            )
+        ]
+    
+    def _hello_command(self, ctx, name: str) -> CommandResult:
+        """Обработчик команды hello."""
+        self.formatter.print_success(f"Привет, {name}!")
+        return CommandResult.success_result(f"Поприветствовали {name}")
+```
+
+#### 2. **Регистрация плагина**
+
+Поместите файл плагина в папку `cbhands/plugins/` и он автоматически загрузится.
+
+#### 3. **Использование плагина**
+
+```bash
+# Ваша команда будет доступна как:
+python -m cbhands.v3.main my-plugin hello --name "Алексей"
+```
+
+### Типы команд
+
+- **service** - Управление сервисами
+- **dev-showroom** - Тестирование и демонстрация
+- **my-plugin** - Ваш кастомный плагин
+
+### Доступные типы опций
+
+- `OptionType.STRING` - Строка
+- `OptionType.INT` - Число
+- `OptionType.BOOL` - Логическое значение
+- `OptionType.FLOAT` - Десятичное число
+
+### Форматирование вывода
+
+```python
+# Успешное сообщение
+self.formatter.print_success("✅ Операция выполнена")
+
+# Информационное сообщение  
+self.formatter.print_info("ℹ️ Информация")
+
+# Предупреждение
+self.formatter.print_warning("⚠️ Внимание")
+
+# Ошибка
+self.formatter.print_error("❌ Ошибка")
+
+# JSON данные
+self.formatter.print_json({"key": "value"})
 ```
 
 ## 🚀 Возможности
