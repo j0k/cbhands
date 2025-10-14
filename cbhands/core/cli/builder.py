@@ -122,20 +122,17 @@ class CLIBuilder:
     
     def _add_plugin_commands(self, main_group: Group) -> None:
         """Add commands from plugins."""
+        # Get commands from executor instead of registry
+        all_commands = self.executor.list_commands()
+        
         # Group commands by plugin
         plugin_commands: Dict[str, List[CommandDefinition]] = {}
         
-        for command_name in self.registry.list_commands():
-            plugin_name = self.registry.get_plugin_for_command(command_name)
-            if plugin_name:
-                plugin = self.registry.get_plugin(plugin_name)
-                if plugin:
-                    for cmd_def in plugin.get_commands():
-                        if cmd_def.name == command_name:
-                            if plugin_name not in plugin_commands:
-                                plugin_commands[plugin_name] = []
-                            plugin_commands[plugin_name].append(cmd_def)
-                            break
+        for cmd_def in all_commands:
+            plugin_name = cmd_def.group or 'default'
+            if plugin_name not in plugin_commands:
+                plugin_commands[plugin_name] = []
+            plugin_commands[plugin_name].append(cmd_def)
         
         # Create plugin groups
         for plugin_name, commands in plugin_commands.items():

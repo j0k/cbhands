@@ -5,7 +5,7 @@ __author__ = "Battle Hands Team"
 __description__ = "Extensible service manager for Battle Hands with plugin system"
 
 from .main import main, create_app
-from .core import *
+from ..core import *
 
 __all__ = [
     'main',
