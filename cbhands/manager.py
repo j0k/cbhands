@@ -64,6 +64,16 @@ class ServiceManager:
     
     def _is_service_running(self, service_name: str) -> bool:
         """Check if service is running."""
+        service_config = self.config.get_service(service_name)
+        if not service_config:
+            return False
+        
+        # First check: Look for processes using the expected port
+        port = service_config.get('port')
+        if port and self._is_port_in_use(port):
+            return True
+        
+        # Second check: Check PID file and process
         pid_file = self._get_pid_file(service_name)
         if not os.path.exists(pid_file):
             return False
@@ -76,29 +86,94 @@ class ServiceManager:
             if psutil.pid_exists(pid):
                 process = psutil.Process(pid)
                 # Check if it's still the same command
-                service_config = self.config.get_service(service_name)
-                if service_config:
-                    cmd = ' '.join(process.cmdline())
-                    # Check if the command matches the expected command or contains the service name
-                    expected_cmd = service_config.get('command', '')
-                    if (service_config['name'] in cmd or 
-                        expected_cmd in cmd or 
-                        cmd.endswith(expected_cmd.split()[-1])):
-                        return True
-            return False
+                cmd = ' '.join(process.cmdline())
+                expected_cmd = service_config.get('command', '')
+                if (service_config['name'] in cmd or 
+                    expected_cmd in cmd or 
+                    cmd.endswith(expected_cmd.split()[-1])):
+                    return True
+            
+            # Third check: Look for child processes that might be running the service
+            return self._check_child_processes(service_name, port)
+            
         except (ValueError, psutil.NoSuchProcess, psutil.AccessDenied):
+            # If PID file exists but process is dead, check for child processes
+            return self._check_child_processes(service_name, port)
+    
+    def _is_port_in_use(self, port: int) -> bool:
+        """Check if a port is in use."""
+        import socket
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(1)
+                result = s.connect_ex(('localhost', port))
+                return result == 0
+        except:
             return False
+    
+    def _check_child_processes(self, service_name: str, port: int) -> bool:
+        """Check for child processes that might be running the service."""
+        if not port:
+            return False
+        
+        try:
+            # Check if port is in use by any process
+            if self._is_port_in_use(port):
+                # Find which process is using the port
+                for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                    try:
+                        if proc.info['cmdline']:
+                            cmdline = ' '.join(proc.info['cmdline'])
+                            # Check if this looks like our service
+                            if (service_name in cmdline or 
+                                'serve' in cmdline or 
+                                'node' in cmdline and str(port) in cmdline):
+                                return True
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+        except:
+            pass
+        
+        return False
     
     def _get_service_pid(self, service_name: str) -> Optional[int]:
         """Get PID of running service."""
         if not self._is_service_running(service_name):
             return None
         
+        service_config = self.config.get_service(service_name)
+        if not service_config:
+            return None
+        
+        port = service_config.get('port')
+        
+        # First try to get PID from file
         try:
             with open(self._get_pid_file(service_name), 'r') as f:
-                return int(f.read().strip())
+                pid = int(f.read().strip())
+                if psutil.pid_exists(pid):
+                    return pid
         except (ValueError, FileNotFoundError):
-            return None
+            pass
+        
+        # If PID file is outdated, find the actual running process
+        if port:
+            try:
+                for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                    try:
+                        if proc.info['cmdline']:
+                            cmdline = ' '.join(proc.info['cmdline'])
+                            # Check if this looks like our service
+                            if (service_name in cmdline or 
+                                'serve' in cmdline or 
+                                'node' in cmdline and str(port) in cmdline):
+                                return proc.info['pid']
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        continue
+            except:
+                pass
+        
+        return None
     
     def start_service(self, service_name: str) -> Tuple[bool, str]:
         """Start a service.
