@@ -194,6 +194,19 @@ class ServiceManager:
         
         return None
     
+    def _clear_lobby_guard_key(self):
+        """Clear the Redis guard key for lobby service."""
+        try:
+            import subprocess
+            result = subprocess.run(['redis-cli', 'del', 'locks:lobby:leader:single-node'], 
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                logger.info("Cleared lobby Redis guard key")
+            else:
+                logger.warning(f"Failed to clear lobby guard key: {result.stderr}")
+        except Exception as e:
+            logger.warning(f"Error clearing lobby guard key: {e}")
+    
     def start_service(self, service_name: str) -> Tuple[bool, str]:
         """Start a service.
         
@@ -277,6 +290,10 @@ class ServiceManager:
                 # Force kill if graceful shutdown failed
                 process.kill()
                 process.wait(timeout=2)
+            
+            # Special handling for lobby service - clear Redis guard key
+            if service_name == 'lobby':
+                self._clear_lobby_guard_key()
             
             # Clean up PID file
             pid_file = self._get_pid_file(service_name)
