@@ -1,0 +1,19 @@
+# Core dependencies
+click>=8.0.0
+colorama>=0.4.4
+PyYAML>=6.0
+psutil>=5.9.0
+
+# Plugin system
+pkg-resources>=0.0.0
+
+# Optional rich formatting (install with: pip install cbhands[rich])
+# rich>=13.0.0
+
+# Development dependencies (install with: pip install cbhands[dev])
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=23.0.0
+# isort>=5.12.0
+# mypy>=1.0.0
+# flake8>=6.0.0
