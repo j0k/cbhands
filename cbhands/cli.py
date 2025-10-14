@@ -243,6 +243,98 @@ def plugins():
         click.echo()
 
 
+@cli.command()
+@click.pass_context
+def discover(ctx):
+    """Discover all running Battle Hands processes."""
+    manager = ctx.obj['manager']
+    discovered = manager.discover_all_processes()
+    
+    if not discovered:
+        click.echo(f"{Fore.YELLOW}No Battle Hands processes discovered{Style.RESET_ALL}")
+        return
+    
+    click.echo(f"{Fore.CYAN}Discovered Battle Hands Processes:{Style.RESET_ALL}")
+    click.echo("=" * 40)
+    
+    for service_type, proc in discovered.items():
+        status_color = Fore.GREEN if proc.pid else Fore.RED
+        click.echo(f"{Fore.BLUE}{service_type.upper()}{Style.RESET_ALL}")
+        click.echo(f"    PID: {status_color}{proc.pid}{Style.RESET_ALL}")
+        click.echo(f"    Command: {proc.command}")
+        click.echo(f"    Working Dir: {proc.working_directory}")
+        click.echo(f"    Port: {proc.port or 'N/A'}")
+        click.echo(f"    Uptime: {proc.uptime}")
+        click.echo(f"    CPU: {proc.cpu_percent:.1f}%")
+        click.echo(f"    Memory: {proc.memory_percent:.1f}%")
+        if proc.children:
+            click.echo(f"    Children: {proc.children}")
+        click.echo()
+
+
+@cli.command()
+@click.pass_context
+def health(ctx):
+    """Get comprehensive health status of all services."""
+    manager = ctx.obj['manager']
+    status = manager.get_comprehensive_status()
+    
+    click.echo(f"{Fore.CYAN}Battle Hands Health Status{Style.RESET_ALL}")
+    click.echo("=" * 30)
+    click.echo(f"Total Services: {status['total_services']}")
+    click.echo(f"Running: {Fore.GREEN}{status['running_services']}{Style.RESET_ALL}")
+    click.echo(f"Stopped: {Fore.RED}{status['stopped_services']}{Style.RESET_ALL}")
+    click.echo()
+    
+    for service_name, service_info in status['services'].items():
+        status_color = Fore.GREEN if service_info['status'] == 'running' else Fore.RED
+        managed_color = Fore.BLUE if service_info['managed_by'] == 'cbhands' else Fore.YELLOW
+        
+        click.echo(f"{Fore.BLUE}{service_name.upper()}{Style.RESET_ALL}")
+        click.echo(f"    Status: {status_color}{service_info['status'].upper()}{Style.RESET_ALL}")
+        click.echo(f"    Managed by: {managed_color}{service_info['managed_by']}{Style.RESET_ALL}")
+        click.echo(f"    PID: {service_info.get('pid', 'N/A')}")
+        click.echo(f"    Port: {service_info.get('port', 'N/A')}")
+        click.echo(f"    Uptime: {service_info.get('uptime', 'N/A')}")
+        
+        if 'cpu_percent' in service_info:
+            click.echo(f"    CPU: {service_info['cpu_percent']:.1f}%")
+        if 'memory_percent' in service_info:
+            click.echo(f"    Memory: {service_info['memory_percent']:.1f}%")
+        if 'command' in service_info:
+            click.echo(f"    Command: {service_info['command']}")
+        
+        click.echo()
+
+
+@cli.command()
+@click.pass_context
+def cleanup(ctx):
+    """Clean up orphaned Battle Hands processes."""
+    manager = ctx.obj['manager']
+    success, message = manager.cleanup_orphaned_processes()
+    
+    if success:
+        click.echo(f"{Fore.GREEN}✓ {message}{Style.RESET_ALL}")
+    else:
+        click.echo(f"{Fore.RED}✗ {message}{Style.RESET_ALL}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+@click.pass_context
+def restart_all(ctx):
+    """Restart all Battle Hands services."""
+    manager = ctx.obj['manager']
+    success, message = manager.restart_all_services()
+    
+    if success:
+        click.echo(f"{Fore.GREEN}✓ {message}{Style.RESET_ALL}")
+    else:
+        click.echo(f"{Fore.RED}✗ {message}{Style.RESET_ALL}", err=True)
+        sys.exit(1)
+
+
 @cli.group()
 def use_games():
     """Game testing utilities."""

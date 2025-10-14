@@ -11,6 +11,7 @@ import yaml
 
 from .config import Config
 from .logger import get_logger
+from .process_discovery import ProcessDiscovery, DiscoveredProcess
 
 logger = get_logger(__name__)
 
@@ -28,6 +29,9 @@ class ServiceManager:
         self.state_file = config.get_state_file_path()
         self.log_dir = config.get_log_dir()
         self.pid_dir = config.get_pid_dir()
+        
+        # Initialize process discovery
+        self.process_discovery = ProcessDiscovery()
         
         # Ensure directories exist
         os.makedirs(self.log_dir, exist_ok=True)
@@ -457,3 +461,137 @@ class ServiceManager:
             return False, f"Partially started: {', '.join(started_services)}. Failed: {', '.join(failed_services)}"
         else:
             return False, f"Failed to start all services: {', '.join(failed_services)}"
+    
+    def discover_all_processes(self) -> Dict[str, DiscoveredProcess]:
+        """Discover all Battle Hands processes.
+        
+        Returns:
+            Dictionary of discovered processes by service type
+        """
+        return self.process_discovery.discover_all_processes()
+    
+    def get_comprehensive_status(self) -> Dict[str, Any]:
+        """Get comprehensive status of all services and discovered processes.
+        
+        Returns:
+            Dictionary with detailed status information
+        """
+        # Get configured services status
+        configured_services = {}
+        services = self.config.get_services()
+        
+        for service_name in services.keys():
+            is_running = self._is_service_running(service_name)
+            pid = self._get_service_pid(service_name) if is_running else None
+            
+            configured_services[service_name] = {
+                'name': service_name,
+                'status': 'running' if is_running else 'stopped',
+                'pid': pid,
+                'port': services[service_name].get('port'),
+                'description': services[service_name].get('description', ''),
+                'uptime': self._get_service_uptime(service_name) if is_running else None,
+                'managed_by': 'cbhands'
+            }
+        
+        # Get discovered processes
+        discovered_processes = self.discover_all_processes()
+        
+        # Merge discovered processes with configured services
+        for service_type, proc in discovered_processes.items():
+            if service_type in configured_services:
+                # Update with discovered process info
+                configured_services[service_type].update({
+                    'discovered_pid': proc.pid,
+                    'command': proc.command,
+                    'working_directory': proc.working_directory,
+                    'cpu_percent': proc.cpu_percent,
+                    'memory_percent': proc.memory_percent,
+                    'children': proc.children,
+                    'parent_pid': proc.parent_pid
+                })
+            else:
+                # Add new discovered service
+                configured_services[service_type] = {
+                    'name': service_type,
+                    'status': 'running',
+                    'pid': proc.pid,
+                    'port': proc.port,
+                    'description': f"Discovered {service_type} service",
+                    'uptime': proc.uptime,
+                    'managed_by': 'discovered',
+                    'command': proc.command,
+                    'working_directory': proc.working_directory,
+                    'cpu_percent': proc.cpu_percent,
+                    'memory_percent': proc.memory_percent,
+                    'children': proc.children,
+                    'parent_pid': proc.parent_pid
+                }
+        
+        return {
+            'timestamp': time.time(),
+            'total_services': len(configured_services),
+            'running_services': len([s for s in configured_services.values() if s['status'] == 'running']),
+            'stopped_services': len([s for s in configured_services.values() if s['status'] == 'stopped']),
+            'services': configured_services
+        }
+    
+    def cleanup_orphaned_processes(self) -> Tuple[bool, str]:
+        """Clean up orphaned Battle Hands processes.
+        
+        Returns:
+            Tuple of (success, message)
+        """
+        try:
+            killed_pids = self.process_discovery.kill_orphaned_processes()
+            
+            if killed_pids:
+                return True, f"Cleaned up {len(killed_pids)} orphaned processes: {killed_pids}"
+            else:
+                return True, "No orphaned processes found"
+        
+        except Exception as e:
+            return False, f"Error cleaning up orphaned processes: {e}"
+    
+    def restart_all_services(self) -> Tuple[bool, str]:
+        """Restart all services.
+        
+        Returns:
+            Tuple of (success, message)
+        """
+        # First stop all services
+        stop_success, stop_message = self.stop_all_services()
+        
+        if not stop_success:
+            return False, f"Failed to stop services: {stop_message}"
+        
+        # Wait a moment for processes to fully stop
+        time.sleep(2)
+        
+        # Then start all services
+        start_success, start_message = self.start_all_services()
+        
+        if not start_success:
+            return False, f"Failed to start services: {start_message}"
+        
+        return True, f"All services restarted successfully. {stop_message} {start_message}"
+    
+    def _get_service_uptime(self, service_name: str) -> Optional[str]:
+        """Get service uptime."""
+        try:
+            pid = self._get_service_pid(service_name)
+            if not pid:
+                return None
+            
+            proc = psutil.Process(pid)
+            create_time = proc.create_time()
+            uptime_seconds = time.time() - create_time
+            
+            hours = int(uptime_seconds // 3600)
+            minutes = int((uptime_seconds % 3600) // 60)
+            seconds = int(uptime_seconds % 60)
+            
+            return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            return None
