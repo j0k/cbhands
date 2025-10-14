@@ -429,12 +429,20 @@ def load_plugins():
     plugins = {}
     
     try:
-        # Try to load dev_showroom plugin
-        from cbhands_dev_showroom.plugin import DevShowroomPlugin
-        dev_showroom = DevShowroomPlugin()
+        # Try to load simple dev_showroom plugin first
+        from cbhands_dev_showroom.simple_plugin import SimpleDevShowroomPlugin
+        dev_showroom = SimpleDevShowroomPlugin()
         plugins[dev_showroom.name] = dev_showroom
-    except ImportError:
-        pass
+    except ImportError as e:
+        print(f"Debug: Could not import simple dev_showroom: {e}")
+        try:
+            # Fallback to full plugin
+            from cbhands_dev_showroom.plugin import DevShowroomPlugin
+            dev_showroom = DevShowroomPlugin()
+            plugins[dev_showroom.name] = dev_showroom
+        except ImportError as e2:
+            print(f"Debug: Could not import full dev_showroom: {e2}")
+            pass
     
     return plugins
 
@@ -541,7 +549,7 @@ def main():
     plugin_info = get_plugin_info()
     if plugin_info:
         # Create enhanced help text
-        plugin_text = f"\n{Fore.CYAN}Available Plugins:{Style.RESET_ALL}\n"
+        plugin_text = f"\n\n{Fore.CYAN}Available Plugins:{Style.RESET_ALL}\n"
         plugin_text += "=" * 30 + "\n"
         for plugin in plugin_info:
             plugin_text += f"{Fore.BLUE}{plugin['name']}{Style.RESET_ALL} v{plugin['version']} - {plugin['description']}\n"
@@ -554,4 +562,7 @@ def main():
 
 
 if __name__ == '__main__':
+    main()
+else:
+    # When imported as module (e.g., by pipx), load plugins
     main()
