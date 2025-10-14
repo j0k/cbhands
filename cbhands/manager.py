@@ -156,19 +156,38 @@ class ServiceManager:
         except (ValueError, FileNotFoundError):
             pass
         
-        # If PID file is outdated, find the actual running process
+        # If PID file is outdated, find the actual running process by port
         if port:
+            try:
+                # Use netstat to find the process listening on the port
+                import subprocess
+                result = subprocess.run(['netstat', '-tlnp'], capture_output=True, text=True)
+                for line in result.stdout.split('\n'):
+                    if f':{port}' in line and 'LISTEN' in line:
+                        # Extract PID from the line
+                        parts = line.split()
+                        if len(parts) >= 7:
+                            pid_part = parts[6].split('/')[0]
+                            try:
+                                pid = int(pid_part)
+                                return pid
+                            except ValueError:
+                                continue
+            except:
+                pass
+            
+            # Fallback: search through processes
             try:
                 for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
                     try:
                         if proc.info['cmdline']:
                             cmdline = ' '.join(proc.info['cmdline'])
-                            # Check if this looks like our service
                             if (service_name in cmdline or 
-                                'serve' in cmdline or 
-                                'node' in cmdline and str(port) in cmdline):
+                                ('serve' in cmdline and '3000' in cmdline) or
+                                ('node' in cmdline and 'dist/index.js' in cmdline) or
+                                ('main' in cmdline and ('lobby' in cmdline or 'dealer' in cmdline))):
                                 return proc.info['pid']
-                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
                         continue
             except:
                 pass
