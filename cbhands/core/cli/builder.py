@@ -52,26 +52,31 @@ class CLIBuilder:
         @click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
         def plugins(verbose: bool):
             """List all available plugins."""
-            plugin_list = self.registry.list_plugins()
+            # Get plugins from executor instead of registry
+            all_commands = self.executor.list_commands()
+            plugin_groups = {}
             
-            if not plugin_list:
+            for cmd_def in all_commands:
+                group_name = cmd_def.group or 'default'
+                if group_name not in plugin_groups:
+                    plugin_groups[group_name] = {
+                        'commands': [],
+                        'description': f"{group_name} plugin"
+                    }
+                plugin_groups[group_name]['commands'].append(cmd_def.name)
+            
+            if not plugin_groups:
                 click.echo("No plugins loaded.")
                 return
             
             click.echo("Available Plugins:")
             click.echo("=" * 30)
             
-            for plugin_name in plugin_list:
-                metadata = self.registry.get_plugin_metadata(plugin_name)
-                if metadata:
-                    click.echo(f"{plugin_name} v{metadata['version']} - {metadata['description']}")
-                    if verbose:
-                        commands = self.registry.list_commands_by_plugin(plugin_name)
-                        if commands:
-                            click.echo(f"  Commands: {', '.join(commands)}")
-                        deps = self.registry.get_plugin_dependencies(plugin_name)
-                        if deps:
-                            click.echo(f"  Dependencies: {', '.join(deps)}")
+            for plugin_name, info in plugin_groups.items():
+                click.echo(f"{plugin_name} - {info['description']}")
+                if verbose:
+                    if info['commands']:
+                        click.echo(f"  Commands: {', '.join(info['commands'])}")
                 click.echo()
         
         @main_group.command()
@@ -107,7 +112,15 @@ class CLIBuilder:
         @main_group.command()
         def groups():
             """List all command groups."""
-            groups = self.registry.list_groups()
+            # Get groups from executor instead of registry
+            all_commands = self.executor.list_commands()
+            groups = {}
+            
+            for cmd_def in all_commands:
+                group_name = cmd_def.group or 'default'
+                if group_name not in groups:
+                    groups[group_name] = []
+                groups[group_name].append(cmd_def.name)
             
             if not groups:
                 click.echo("No command groups found.")
@@ -116,8 +129,7 @@ class CLIBuilder:
             click.echo("Command Groups:")
             click.echo("=" * 20)
             
-            for group_name in groups:
-                commands = self.registry.list_commands_by_group(group_name)
+            for group_name, commands in groups.items():
                 click.echo(f"{group_name}: {', '.join(commands)}")
     
     def _add_plugin_commands(self, main_group: Group) -> None:
@@ -231,16 +243,21 @@ class CLIBuilder:
     
     def _add_plugin_help(self, main_group: Group) -> None:
         """Add plugin information to main group help."""
-        plugins = self.registry.list_plugins()
-        if not plugins:
+        # Get plugins from executor instead of registry
+        all_commands = self.executor.list_commands()
+        plugin_groups = set()
+        
+        for cmd_def in all_commands:
+            if cmd_def.group:
+                plugin_groups.add(cmd_def.group)
+        
+        if not plugin_groups:
             return
         
         # Get plugin info
         plugin_info = []
-        for plugin_name in plugins:
-            metadata = self.registry.get_plugin_metadata(plugin_name)
-            if metadata:
-                plugin_info.append(f"{metadata['name']} v{metadata['version']} - {metadata['description']}")
+        for group_name in plugin_groups:
+            plugin_info.append(f"{group_name} - Plugin commands")
         
         if plugin_info:
             help_text = main_group.help or ""
