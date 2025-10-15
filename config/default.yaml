@@ -5,26 +5,56 @@ settings:
   timeout: 30
 
 services:
-  lobby:
-    name: "lobby"
-    command: "go run cmd/lobby/main.go"
-    working_directory: "/home/jk/battles/lobby"
-    port: 6001
-    env:
-      REDIS_HOST: localhost
-      REDIS_PORT: 6379
-    description: "Lobby Service - Table management and WebSocket connections"
+  # Redis - база данных (системный сервис)
+  redis:
+    name: "redis"
+    command: "redis-server --port 6379"
+    working_directory: "/tmp"
+    port: 6379
+    env: {}
+    description: "Redis - In-memory data store"
     
+  # Dealer - игровая логика (оригинальный)
   dealer:
     name: "dealer"
     command: "go run cmd/dealer/main.go"
     working_directory: "/home/jk/battles/dealer"
-    port: 6000
+    port: 8080  # HTTP API
+    grpc_port: 6000  # gRPC API
     env:
       REDIS_HOST: localhost
       REDIS_PORT: 6379
-    description: "Dealer Service - Game logic and rules"
+    description: "Dealer Service - Game logic and rules (Original)"
     
+  # Game Layer Py - прокси над Dealer с Redis логированием
+  game_layer_py:
+    name: "game_layer_py"
+    command: "python -m game_layer_py.main"
+    working_directory: "/home/jk/battles/game-layer-py"
+    port: 8082  # HTTP API
+    env:
+      DEALER_HOST: localhost
+      DEALER_PORT: 8080
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      API_HOST: 0.0.0.0
+      API_PORT: 8082
+    description: "Game Layer Py - Dealer Proxy with Redis logging"
+    
+  # Lobby - управление столами (подключается к game-layer-py)
+  lobby:
+    name: "lobby"
+    command: "go run cmd/lobby/main.go"
+    working_directory: "/home/jk/battles/lobby"
+    port: 8081  # HTTP API
+    grpc_port: 6001  # gRPC API
+    env:
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      DEALER_GRPC_ADDR: localhost:8082  # Подключается к game-layer-py
+    description: "Lobby Service - Table management (connects to game-layer-py)"
+    
+  # Monitor - веб-панель мониторинга
   monitor:
     name: "monitor"
     command: "node dist/index.js --port 9001"
@@ -36,15 +66,6 @@ services:
       MONITOR_PORT: 9001
       REDIS_HOST: localhost
       REDIS_PORT: 6379
-      LOBBY_HTTP_PORT: 6001
-      DEALER_HTTP_PORT: 6000
+      LOBBY_HTTP_PORT: 8081
+      DEALER_HTTP_PORT: 8082  # Теперь мониторим game-layer-py
     description: "Monitor Service - Web control panel and monitoring"
-    
-  frontend:
-    name: "frontend"
-    command: "npx serve dist -p 3000"
-    working_directory: "/home/jk/battles/battle_hands_ts"
-    port: 3000
-    env:
-      NODE_ENV: production
-    description: "Frontend - Battle Hands TypeScript application"
