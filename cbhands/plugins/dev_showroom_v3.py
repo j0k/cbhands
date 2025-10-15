@@ -9,6 +9,10 @@ from pathlib import Path
 
 from ..core import BasePlugin, CommandDefinition, OptionDefinition, OptionType, CommandResult, PluginMetadata
 from ..core.config import PluginConfig
+from .scenarios import (
+    A1Scenario, A2Scenario, A3Scenario, A4Scenario, A5Scenario,
+    A6Scenario, A7Scenario, A8Scenario, A9Scenario, A10Scenario
+)
 
 
 class DevShowroomV3Plugin(BasePlugin):
@@ -65,7 +69,7 @@ class DevShowroomV3Plugin(BasePlugin):
                     ),
                     OptionDefinition(
                         name="verbose",
-                        type=OptionType.FLAG,
+                        type=OptionType.BOOLEAN,
                         description="Enable verbose output",
                         default=False,
                         required=False
@@ -80,7 +84,7 @@ class DevShowroomV3Plugin(BasePlugin):
                 options=[
                     OptionDefinition(
                         name="verbose",
-                        type=OptionType.FLAG,
+                        type=OptionType.BOOLEAN,
                         description="Enable verbose output",
                         default=False,
                         required=False
@@ -101,7 +105,7 @@ class DevShowroomV3Plugin(BasePlugin):
                     ),
                     OptionDefinition(
                         name="verbose",
-                        type=OptionType.FLAG,
+                        type=OptionType.BOOLEAN,
                         description="Enable verbose output",
                         default=False,
                         required=False
@@ -116,7 +120,7 @@ class DevShowroomV3Plugin(BasePlugin):
                 options=[
                     OptionDefinition(
                         name="all",
-                        type=OptionType.FLAG,
+                        type=OptionType.BOOLEAN,
                         description="Delete all tables",
                         default=False,
                         required=False
@@ -171,6 +175,204 @@ class DevShowroomV3Plugin(BasePlugin):
                 name="1vs1.A1",
                 description="Run 1vs1.A1 scenario (Rock vs Scissors)",
                 handler=self._simulate_a1,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A2",
+                description="Run 1vs1.A2 scenario (Draw then win)",
+                handler=self._simulate_a2,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A3",
+                description="Run 1vs1.A3 scenario (First round timeout)",
+                handler=self._simulate_a3,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A4",
+                description="Run 1vs1.A4 scenario (Second round timeout)",
+                handler=self._simulate_a4,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A5",
+                description="Run 1vs1.A5 scenario (Double timeout exclusion)",
+                handler=self._simulate_a5,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A6",
+                description="Run 1vs1.A6 scenario (Connection loss and return)",
+                handler=self._simulate_a6,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A7",
+                description="Run 1vs1.A7 scenario (Re-entry after completed game)",
+                handler=self._simulate_a7,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A8",
+                description="Run 1vs1.A8 scenario (Duplicate packet handling)",
+                handler=self._simulate_a8,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A9",
+                description="Run 1vs1.A9 scenario (Mutual timeout)",
+                handler=self._simulate_a9,
+                options=[
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="1vs1.A10",
+                description="Run 1vs1.A10 scenario (Player exclusion)",
+                handler=self._simulate_a10,
                 options=[
                     OptionDefinition(
                         name="game-verbose",
@@ -438,3 +640,75 @@ class DevShowroomV3Plugin(BasePlugin):
             'services': services,
             'all_running': all_running
         }
+    
+    def _simulate_a2(self, ctx, **kwargs) -> CommandResult:
+        """Simulate 1vs1.A2 scenario."""
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        scenario = A2Scenario()
+        return scenario.execute(game_verbose, verbose_comments)
+    
+    def _simulate_a3(self, ctx, **kwargs) -> CommandResult:
+        """Simulate 1vs1.A3 scenario."""
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        scenario = A3Scenario()
+        return scenario.execute(game_verbose, verbose_comments)
+    
+    def _simulate_a4(self, ctx, **kwargs) -> CommandResult:
+        """Simulate 1vs1.A4 scenario."""
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        scenario = A4Scenario()
+        return scenario.execute(game_verbose, verbose_comments)
+    
+    def _simulate_a5(self, ctx, **kwargs) -> CommandResult:
+        """Simulate 1vs1.A5 scenario."""
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        scenario = A5Scenario()
+        return scenario.execute(game_verbose, verbose_comments)
+    
+    def _simulate_a6(self, ctx, **kwargs) -> CommandResult:
+        """Simulate 1vs1.A6 scenario."""
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        scenario = A6Scenario()
+        return scenario.execute(game_verbose, verbose_comments)
+    
+    def _simulate_a7(self, ctx, **kwargs) -> CommandResult:
+        """Simulate 1vs1.A7 scenario."""
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        scenario = A7Scenario()
+        return scenario.execute(game_verbose, verbose_comments)
+    
+    def _simulate_a8(self, ctx, **kwargs) -> CommandResult:
+        """Simulate 1vs1.A8 scenario."""
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        scenario = A8Scenario()
+        return scenario.execute(game_verbose, verbose_comments)
+    
+    def _simulate_a9(self, ctx, **kwargs) -> CommandResult:
+        """Simulate 1vs1.A9 scenario."""
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        scenario = A9Scenario()
+        return scenario.execute(game_verbose, verbose_comments)
+    
+    def _simulate_a10(self, ctx, **kwargs) -> CommandResult:
+        """Simulate 1vs1.A10 scenario."""
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        scenario = A10Scenario()
+        return scenario.execute(game_verbose, verbose_comments)

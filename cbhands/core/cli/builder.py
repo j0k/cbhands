@@ -226,18 +226,34 @@ class CLIBuilder:
         
         option_type = type_map.get(option_def.type, str)
         
-        # Create option
-        option = Option(
-            param_decls=[f"--{option_def.name}"] + ([f"-{option_def.short_name}"] if option_def.short_name else []),
-            type=option_type,
-            default=option_def.default,
-            help=option_def.help or option_def.description,
-            required=option_def.required,
-            multiple=option_def.multiple,
-            hidden=option_def.hidden,
-            metavar=option_def.metavar,
-            envvar=option_def.envvar
-        )
+        # Special handling for flags
+        if option_def.type == OptionType.FLAG:
+            # For flags, use is_flag=True
+            option = Option(
+                param_decls=[f"--{option_def.name}"] + ([f"-{option_def.short_name}"] if option_def.short_name else []),
+                type=bool,
+                default=option_def.default,
+                help=option_def.help or option_def.description,
+                required=option_def.required,
+                multiple=option_def.multiple,
+                hidden=option_def.hidden,
+                metavar=option_def.metavar,
+                envvar=option_def.envvar,
+                is_flag=True
+            )
+        else:
+            # Create option
+            option = Option(
+                param_decls=[f"--{option_def.name}"] + ([f"-{option_def.short_name}"] if option_def.short_name else []),
+                type=option_type,
+                default=option_def.default,
+                help=option_def.help or option_def.description,
+                required=option_def.required,
+                multiple=option_def.multiple,
+                hidden=option_def.hidden,
+                metavar=option_def.metavar,
+                envvar=option_def.envvar
+            )
         
         return option
     
