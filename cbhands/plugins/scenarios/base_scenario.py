@@ -14,7 +14,7 @@ class BaseScenario(ABC):
     
     def __init__(self, 
                  dealer_host: str = "localhost",
-                 dealer_port: int = 8080,
+                 dealer_port: int = 8082,  # game-layer-py port
                  lobby_host: str = "localhost", 
                  lobby_port: int = 8081,
                  redis_host: str = "localhost",
@@ -101,7 +101,8 @@ class BaseScenario(ABC):
             )
             response.raise_for_status()
             game_data = response.json()
-            self.game_id = game_data['game']['id']
+            # game-layer-py returns gameId directly, not nested in 'game'
+            self.game_id = game_data.get('gameId') or game_data.get('game', {}).get('id')
             return True
         except Exception as e:
             print(f"Error starting game: {e}")
@@ -115,14 +116,13 @@ class BaseScenario(ABC):
         self.current_round += 1
         
         payload = {
-            "gameId": self.game_id,
             "roundNumber": self.current_round,
             "moves": moves
         }
         
         try:
             response = requests.post(
-                f"{self.dealer_url}/v1/games/{self.game_id}/rounds:resolve",
+                f"{self.dealer_url}/v1/games/{self.game_id}/rounds/resolve",
                 json=payload,
                 timeout=5,
                 verify=False

@@ -390,6 +390,34 @@ class DevShowroomV3Plugin(BasePlugin):
                     )
                 ],
                 group="dev-showroom"
+            ),
+            CommandDefinition(
+                name="run",
+                description="Run a showroom scenario",
+                handler=self._run_scenario,
+                options=[
+                    OptionDefinition(
+                        name="scenario",
+                        type=OptionType.STRING,
+                        description="Scenario to run (e.g., 1vs1.A1, 1vs1.A2, etc.)",
+                        required=True
+                    ),
+                    OptionDefinition(
+                        name="game-verbose",
+                        type=OptionType.FLAG,
+                        description="Enable detailed game output",
+                        default=False,
+                        required=False
+                    ),
+                    OptionDefinition(
+                        name="verbose-comments",
+                        type=OptionType.FLAG,
+                        description="Enable verbose comments",
+                        default=False,
+                        required=False
+                    )
+                ],
+                group="dev-showroom"
             )
         ]
     
@@ -420,6 +448,16 @@ class DevShowroomV3Plugin(BasePlugin):
                 
                 # Store in Redis
                 self.redis_client.set(f"table:{table_name}", json.dumps(table_data))
+                
+                # Create TABLE_CREATED event for monitoring
+                table_event = {
+                    "type": "TABLE_CREATED",
+                    "table_id": table_name,
+                    "timestamp": time.time(),
+                    "data": table_data
+                }
+                self.redis_client.lpush("showroom:events", json.dumps(table_event))
+                
                 created_tables.append(table_name)
                 
                 if verbose:
@@ -563,7 +601,7 @@ class DevShowroomV3Plugin(BasePlugin):
             return CommandResult.error_result(f"Failed to retrieve Redis data: {str(e)}")
     
     def _simulate_a1(self, ctx, **kwargs) -> CommandResult:
-        """Simulate 1vs1.A1 scenario."""
+        """Simulate 1vs1.A1 scenario with game-layer-py."""
         game_verbose = kwargs.get('game-verbose', False)
         verbose_comments = kwargs.get('verbose-comments', False)
         
@@ -573,38 +611,33 @@ class DevShowroomV3Plugin(BasePlugin):
             if not services_status['all_running']:
                 return CommandResult.error_result("Required services are not running")
             
-            # Create a test table
-            table_name = f"test-a1-{int(time.time())}"
-            table_data = {
-                "name": table_name,
-                "mode": "test",
-                "players": 2,
-                "max_players": 2,
-                "status": "active",
-                "host_id": str(uuid.uuid4()),
-                "game_id": str(uuid.uuid4()),
-                "bet_amount": 1,
-                "created_at": time.time()
-            }
-            
-            if self.redis_client:
-                self.redis_client.set(f"table:{table_name}", json.dumps(table_data))
-            
-            # Simulate game
             if verbose_comments:
-                print("Given: 2 игрока (A, B) за одним столом. Оба готовы, игра стартует.")
+                print("Given: 2 игрока (A, B) готовы к игре. Игра стартует.")
             
             if game_verbose:
                 print("When: Раунд 1: A выбирает Камень, B выбирает Ножницы.")
                 print("Then: A побеждает, появляется кнопка 'New Game'")
             
-            # Simulate result
+            # Create game through game-layer-py
+            game_id = self._create_game_via_game_layer_py()
+            if not game_id:
+                return CommandResult.error_result("Failed to create game via game-layer-py")
+            
+            # Resolve round through game-layer-py
+            round_result = self._resolve_round_via_game_layer_py(game_id)
+            if not round_result:
+                return CommandResult.error_result("Failed to resolve round via game-layer-py")
+            
+            # Extract winner
+            winner_ids = round_result.get('result', {}).get('winnerIds', [])
+            winner = "Player A" if winner_ids else "No winner"
+            
             result_data = {
                 "scenario": "1vs1.A1",
                 "description": "Обычная победа - Player A (Rock) vs Player B (Scissors)",
-                "winner": "Player A",
-                "table": table_name,
-                "game_id": table_data["game_id"]
+                "winner": winner,
+                "game_id": game_id,
+                "round_result": round_result
             }
             
             return CommandResult.success_result(
@@ -614,6 +647,41 @@ class DevShowroomV3Plugin(BasePlugin):
             
         except Exception as e:
             return CommandResult.error_result(f"Simulation failed: {str(e)}")
+    
+    def _create_game_via_game_layer_py(self) -> Optional[str]:
+        """Create game via game-layer-py API."""
+        try:
+            response = requests.post(
+                "http://localhost:8082/v1/games",
+                json={"playerIds": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"]},
+                timeout=5
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("gameId")
+        except Exception as e:
+            print(f"Error creating game via game-layer-py: {e}")
+            return None
+    
+    def _resolve_round_via_game_layer_py(self, game_id: str) -> Optional[dict]:
+        """Resolve round via game-layer-py API."""
+        try:
+            response = requests.post(
+                f"http://localhost:8082/v1/games/{game_id}/rounds/resolve",
+                json={
+                    "roundNumber": 1,
+                    "moves": [
+                        {"playerId": "550e8400-e29b-41d4-a716-446655440000", "choice": "MOVE_CHOICE_ROCK"},
+                        {"playerId": "550e8400-e29b-41d4-a716-446655440001", "choice": "MOVE_CHOICE_SCISSORS"}
+                    ]
+                },
+                timeout=5
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            print(f"Error resolving round via game-layer-py: {e}")
+            return None
     
     def _check_services(self) -> Dict[str, Any]:
         """Check if required services are running."""
@@ -712,3 +780,33 @@ class DevShowroomV3Plugin(BasePlugin):
         
         scenario = A10Scenario()
         return scenario.execute(game_verbose, verbose_comments)
+    
+    def _run_scenario(self, ctx, **kwargs) -> CommandResult:
+        """Run a showroom scenario."""
+        scenario_name = kwargs['scenario']
+        game_verbose = kwargs.get('game-verbose', False)
+        verbose_comments = kwargs.get('verbose-comments', False)
+        
+        # Map scenario names to handlers
+        scenario_handlers = {
+            '1vs1.A1': self._simulate_a1,
+            '1vs1.A2': self._simulate_a2,
+            '1vs1.A3': self._simulate_a3,
+            '1vs1.A4': self._simulate_a4,
+            '1vs1.A5': self._simulate_a5,
+            '1vs1.A6': self._simulate_a6,
+            '1vs1.A7': self._simulate_a7,
+            '1vs1.A8': self._simulate_a8,
+            '1vs1.A9': self._simulate_a9,
+            '1vs1.A10': self._simulate_a10,
+        }
+        
+        if scenario_name not in scenario_handlers:
+            available_scenarios = ', '.join(scenario_handlers.keys())
+            return CommandResult.error_result(
+                f"Unknown scenario '{scenario_name}'. Available scenarios: {available_scenarios}"
+            )
+        
+        # Run the scenario
+        handler = scenario_handlers[scenario_name]
+        return handler(ctx, game_verbose=game_verbose, verbose_comments=verbose_comments)

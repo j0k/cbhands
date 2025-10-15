@@ -36,8 +36,8 @@ class A2Scenario(BaseScenario):
         self._log_action("Round 1: Player A chooses Rock, Player B chooses Rock (DRAW)", verbose_comments)
         
         moves_round1 = [
-            {"playerId": self.player_a_id, "choice": 1},  # Rock
-            {"playerId": self.player_b_id, "choice": 1}   # Rock
+            {"playerId": self.player_a_id, "choice": "MOVE_CHOICE_ROCK"},  # Rock
+            {"playerId": self.player_b_id, "choice": "MOVE_CHOICE_ROCK"}   # Rock
         ]
         
         try:
@@ -56,8 +56,8 @@ class A2Scenario(BaseScenario):
             self._log_action("Round 2: Player A chooses Rock, Player B chooses Scissors", verbose_comments)
             
             moves_round2 = [
-                {"playerId": self.player_a_id, "choice": 1},  # Rock
-                {"playerId": self.player_b_id, "choice": 3}   # Scissors
+                {"playerId": self.player_a_id, "choice": "MOVE_CHOICE_ROCK"},  # Rock
+                {"playerId": self.player_b_id, "choice": "MOVE_CHOICE_SCISSORS"}   # Scissors
             ]
             
             result2 = self._resolve_round(moves_round2)
